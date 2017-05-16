@@ -1,9 +1,10 @@
 package forest
 
 import (
-	"github.com/gorilla/mux"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
@@ -109,6 +110,7 @@ func JsonResult(data interface{}, statusCode httpStatus) ActionResult {
 func (ctx *AppContext) Initialise() {
 	log.SetOutput(os.Stdout)
 	ctx.Routes = make([]Route, 0)
+
 }
 
 func (ctx *AppContext) ListenAndServe(address string) {
@@ -134,7 +136,7 @@ func (ctx *AppContext) ListenAndServe(address string) {
 
 func request_handler(route Route) http.Handler {
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return context.ClearHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		request := HttpRequest{
 			Request: *r,
@@ -148,15 +150,15 @@ func request_handler(route Route) http.Handler {
 		result := route.Handler(&request, &response)
 
 		result.serve_request(&request, &response)
-	})
+	}))
 }
 
-var context *AppContext
+var forest_context *AppContext
 var once sync.Once
 
 func Context() *AppContext {
 	once.Do(func() {
-		context = &AppContext{}
+		forest_context = &AppContext{}
 	})
-	return context
+	return forest_context
 }
